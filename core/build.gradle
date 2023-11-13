@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main {java {srcDirs = ['src/main/java']}}
+}
+
+compileJava {
+    options.encoding = "UTF-8"
+//  options.compilerArgs << "-Xlint:deprecation"
+}
+
+dependencies {
+    compileOnly('org.jetbrains:annotations:24.0.1')                 // debug
+}
+
+jar {
+    archiveBaseName = 'jtool-core'
+}
+
+tasks.register('sourceJar', Jar) {
+    archiveBaseName = 'jtool-core'
+    archiveClassifier = 'src'
+    from sourceSets.main.allSource
+}
+tasks.register('devJar', Jar) {
+    archiveBaseName = 'jtool-core'
+    archiveClassifier = 'dev'
+    from sourceSets.main.output
+}
+
+build {
+    dependsOn jar, sourceJar, devJar
+}

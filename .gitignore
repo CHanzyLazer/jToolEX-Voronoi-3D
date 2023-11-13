@@ -1,6 +1,7 @@
-**/.classpath
-**/.settings
-**/target
-**/.project
-/bin/
-/.idea/
+.*
+__*
+
+/**/build
+
+!/.gitignore
+!/.gitattributes
