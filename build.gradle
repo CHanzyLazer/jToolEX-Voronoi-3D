@@ -1,6 +1,10 @@
+allprojects {
+    group = 'com.jtool'
+}
+
 subprojects {
     apply plugin: 'java'
-
+    
     repositories {
         mavenCentral()
     }
