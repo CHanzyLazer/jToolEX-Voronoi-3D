@@ -22,7 +22,7 @@ compileJava {
 
 dependencies {
     compileOnly('org.jetbrains:annotations:24.0.1')                 // debug
-    implementation project(':jtool-core')                           // core
+    compileOnly project(':jtool-core')                              // core
 }
 
 jar {
