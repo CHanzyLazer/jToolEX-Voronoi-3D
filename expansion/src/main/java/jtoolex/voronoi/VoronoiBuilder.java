@@ -28,6 +28,7 @@ import jtool.code.collection.AbstractCollections;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.*;
 
@@ -594,21 +595,33 @@ public final class VoronoiBuilder {
     private final Random mRNG;
     /** 存储所有的插入的节点，按照插入顺序保留方便使用 */
     private final List<Vertex> mAllVertex = new ArrayList<>();
+    
     /** 是否需要输出警告 */
     boolean mNoWarning = false;
     public VoronoiBuilder setNoWarning(boolean aNoWarning) {mNoWarning = aNoWarning; return this;}
     public VoronoiBuilder setNoWarning() {return setNoWarning(true);}
     
+    /** 边长和面积的截断比例，用于处理退化情况 */
+    double mAreaThreshold = 0.0;
+    double mLengthThreshold = 0.0;
+    public VoronoiBuilder setAreaThreshold(double aAreaThreshold) {mAreaThreshold = Math.max(0.0, aAreaThreshold); return this;}
+    public VoronoiBuilder setLengthThreshold(double aLengthThreshold) {mLengthThreshold = Math.max(0.0, aLengthThreshold); return this;}
+    
+    /** Voronor Index 长度 */
+    int mIndexLength = 9;
+    public VoronoiBuilder setIndexLength(int aIndexLength) {mIndexLength = Math.max(1, aIndexLength); return this;}
+    
+    
     /** 构造函数 */
     public VoronoiBuilder() {this(new Random());}
     public VoronoiBuilder(Random aRNG) {
         mRNG = aRNG;
-        // 初始的极大四面体，保证所有点都会在其内部
+        // 初始的极大四面体，保证所有点都会在其内部；这样降低对称性，让 2D 情况更好处理
         Tetrahedron tInitTetrahedron = new Tetrahedron(
-              new Vertex(-SCALE, SCALE,-SCALE)
-            , new Vertex( SCALE, SCALE, SCALE)
-            , new Vertex( SCALE,-SCALE,-SCALE)
-            , new Vertex(-SCALE,-SCALE, SCALE)
+              new Vertex(-SCALE*1.1, SCALE*1.6,-SCALE*2.3)
+            , new Vertex( SCALE*1.5, SCALE*1.9, SCALE*1.8)
+            , new Vertex( SCALE*2.2,-SCALE*1.4,-SCALE*1.7)
+            , new Vertex(-SCALE*1.2,-SCALE*2.1, SCALE*1.3)
         );
         mLast = tInitTetrahedron;
         mInitVertexA = tInitTetrahedron.mA;
@@ -618,6 +631,7 @@ public final class VoronoiBuilder {
     }
     
     /** 返回是否是虚构的巨大四面体的顶点 */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean isUniverse(Vertex aVertex) {return aVertex==mInitVertexA || aVertex==mInitVertexB || aVertex==mInitVertexC || aVertex==mInitVertexD;}
     /** 返回是否是虚构的巨大四面体 */
     boolean isUniverse(Tetrahedron aTet) {return aTet.containsVertex(mInitVertexA) || aTet.containsVertex(mInitVertexB) || aTet.containsVertex(mInitVertexC) || aTet.containsVertex(mInitVertexD);}
@@ -723,6 +737,8 @@ public final class VoronoiBuilder {
         }
         return rAllTet;
     }
+    @VisibleForTesting public ITetrahedron getTet() {return getTetrahedron();}
+    @VisibleForTesting public @Unmodifiable Collection<ITetrahedron> allTet() {return allTetrahedron();}
     
     
     /** 带有统计信息的完整四面体，会自动更新统计信息 */
@@ -738,32 +754,32 @@ public final class VoronoiBuilder {
         /** 此值用于验证是否需要更新统计信息 */
         private int mSizeVertex = -1;
         /** 近邻信息 */
-        final List<Vertex> mValidVertex = new ArrayList<>(4);
-        final List<Tetrahedron> mValidTet = new ArrayList<>(4);
+        final List<Vertex> mNeighborVertex = new ArrayList<>(4);
+        final List<Tetrahedron> mNeighborTet = new ArrayList<>(4); // 这里会保留边界四面体保证近邻都会获取到
         private void updateStat_() {
             int tSizeVertex = sizeVertex();
             if (mSizeVertex == tSizeVertex) return;
             mSizeVertex = tSizeVertex;
             // 清空旧的数据
-            mValidVertex.clear();
-            mValidTet.clear();
+            mNeighborVertex.clear();
+            mNeighborTet.clear();
             // 统计近邻的节点和四面体，只需要排除边界结构即可
-            if (isUniverse(mA)) {if (!mNoWarning) System.err.println("WARNING: This Tetrahedron is Universe Tetrahedron, which should NOT be stat and return.");} else {mValidVertex.add(mA);}
-            if (isUniverse(mB)) {if (!mNoWarning) System.err.println("WARNING: This Tetrahedron is Universe Tetrahedron, which should NOT be stat and return.");} else {mValidVertex.add(mB);}
-            if (isUniverse(mC)) {if (!mNoWarning) System.err.println("WARNING: This Tetrahedron is Universe Tetrahedron, which should NOT be stat and return.");} else {mValidVertex.add(mC);}
-            if (isUniverse(mD)) {if (!mNoWarning) System.err.println("WARNING: This Tetrahedron is Universe Tetrahedron, which should NOT be stat and return.");} else {mValidVertex.add(mD);}
-            if (mTetA!=null && !isUniverse(mTetA)) {mValidTet.add(mTetA);}
-            if (mTetB!=null && !isUniverse(mTetB)) {mValidTet.add(mTetA);}
-            if (mTetC!=null && !isUniverse(mTetC)) {mValidTet.add(mTetA);}
-            if (mTetD!=null && !isUniverse(mTetD)) {mValidTet.add(mTetA);}
+            if (!isUniverse(mA)) mNeighborVertex.add(mA);
+            if (!isUniverse(mB)) mNeighborVertex.add(mB);
+            if (!isUniverse(mC)) mNeighborVertex.add(mC);
+            if (!isUniverse(mD)) mNeighborVertex.add(mD);
+            if (mTetA!=null) {mNeighborTet.add(mTetA);}
+            if (mTetB!=null) {mNeighborTet.add(mTetB);}
+            if (mTetC!=null) {mNeighborTet.add(mTetC);}
+            if (mTetD!=null) {mNeighborTet.add(mTetD);}
         }
         
         private XYZ mCenterSphere = null;
         /** 返回此四面体外接球的球心，这个值是恒定的，但是不需要总是计算 */
         XYZ centerSphere_() {
             if (mCenterSphere == null) {
-                if (isUniverse(this)) {if (!mNoWarning) System.err.println("WARNING: This Tetrahedron is Universe Tetrahedron, which should NOT be stat and return.");}
-                else {mCenterSphere = Geometry.centerSphere(mA.mXYZ, mB.mXYZ, mC.mXYZ, mD.mXYZ);}
+                if (!mNoWarning && isUniverse(this)) System.err.println("WARNING: This Tetrahedron is Universe, centerSphere may be wrong.");
+                mCenterSphere = Geometry.centerSphere(mA.mXYZ, mB.mXYZ, mC.mXYZ, mD.mXYZ);
             }
             return mCenterSphere;
         }
@@ -778,11 +794,11 @@ public final class VoronoiBuilder {
         /** voronoi 统计信息，现在只有需要时才会进行统计 */
         @Override public @Unmodifiable List<IVertex> neighborVertex() {
             updateStat_();
-            return AbstractCollections.map(mValidVertex, v->v);
+            return AbstractCollections.map(mNeighborVertex, v->v);
         }
         @Override public @Unmodifiable List<ITetrahedron> neighborTetrahedron() {
             updateStat_();
-            return AbstractCollections.map(mValidTet, t->t);
+            return AbstractCollections.map(mNeighborTet, t->t);
         }
     }
     
@@ -801,8 +817,8 @@ public final class VoronoiBuilder {
         /** 此值用于验证是否需要更新统计信息 */
         private int mSizeVertex = -1;
         /** 近邻信息 */
-        final Map<Vertex, /*@NotNull*/ VertexInfo> mNeighborVertex = new LinkedHashMap<>(); // <节点，对应 voronoi 面的信息>
-        final Set<Tetrahedron> mNeighborTet = new LinkedHashSet<>();
+        final Map<Vertex, @Nullable VertexInfo> mNeighborVertex = new LinkedHashMap<>(); // <节点，对应 voronoi 面的信息>
+        final Set<Tetrahedron> mNeighborTet = new LinkedHashSet<>(); // 这里会保留边界四面体保证近邻都会获取到
         private void updateStat_() {
             int tSizeVertex = sizeVertex();
             if (mSizeVertex == tSizeVertex) return;
@@ -869,49 +885,51 @@ public final class VoronoiBuilder {
                 // 此四面体处理完成
                 mNeighborTet.add(tTet);
             }
-            // 移除边界四面体
-            mNeighborTet.removeIf(VoronoiBuilder.this::isUniverse);
             // 根据每个近邻节点计算每个 voronoi 面的顶点数（共棱的四面体数目）和面积（过小要进行截断）
             for (Map.Entry<Vertex, @Nullable VertexInfo> tVertexEntry : mNeighborVertex.entrySet()) {
                 Vertex tVertex = tVertexEntry.getKey();
                 double tDis = mXYZ.distance(tVertex.mXYZ);
                 // 这里直接遍历所有的近邻四面体来得到第一个共棱的四面体
                 Tetrahedron tTet0 = null; XYZ tA = null;
-                for (Tetrahedron tTet : mNeighborTet) {
-                    if (tTet!=null && tTet.containsVertex(tVertex)) {
+                for (Tetrahedron tTet : mNeighborTet) if (!isUniverse(tTet)) {
+                    if (tTet.containsVertex(tVertex)) {
                         tTet0 = tTet; tA = tTet.centerSphere_();
                         break;
                     }
                 }
-                assert tTet0 != null && tA != null;
+                // 非常奇异的情况，此棱全由边界四面体构成，直接跳过即可
+                if (tTet0==null || tA==null) {
+                    if (!mNoWarning) System.err.println("WARNING: Voronoi of this node is Incomplete, voronoi parameters may be wrong.");
+                    continue;
+                }
                 // 绕棱方向计算面积并统计四面体数目
                 int rTetNum = 1;
                 double rArea = 0.0;
                 // 绕棱获取下一个四面体
                 Tetrahedron tTet2 = tTet0.getNeighbor(this, tVertex, null);
-                XYZ tB = (tTet2!=null && mNeighborTet.contains(tTet2)) ? tTet2.centerSphere_() : null;
-                // 如果没有获取到（没有近邻，不包含在近邻中/为初始的四面体），则输出警告，结束环绕
+                XYZ tB = (tTet2!=null && !isUniverse(tTet2) && mNeighborTet.contains(tTet2)) ? tTet2.centerSphere_() : null;
+                // 如果没有获取到（没有近邻，不包含在近邻中，边界四面体），则输出警告，结束环绕
                 if (tB == null) {
-                    if (!mNoWarning) System.err.println("WARNING: Voronoi of this node is Incomplete.");
+                    if (!mNoWarning) System.err.println("WARNING: Voronoi of this node is Incomplete, voronoi parameters may be wrong.");
                     continue;
                 }
                 // 如果 AB 距离过小需要进行截断
-                if (tA.distance(tB) > LEN_CUTOFF*tDis) ++rTetNum;
+                if (mLengthThreshold==0.0 || tA.distance(tB) > mLengthThreshold*tDis) ++rTetNum;
                 Tetrahedron tTet1 = tTet0;
                 while (true) {
                     // 绕棱获取下一个四面体
                     Tetrahedron tTet3 = tTet2.getNeighbor(this, tVertex, tTet1);
-                    XYZ tC = (tTet3!=null && mNeighborTet.contains(tTet3)) ? tTet3.centerSphere_() : null;
-                    // 如果没有获取到（没有近邻，不包含在近邻中/为初始的四面体），则输出警告，结束环绕
+                    XYZ tC = (tTet3!=null && !isUniverse(tTet3) && mNeighborTet.contains(tTet3)) ? tTet3.centerSphere_() : null;
+                    // 如果没有获取到（没有近邻，不包含在近邻中，边界四面体），则输出警告，结束环绕
                     if (tC == null) {
-                        if (!mNoWarning) System.err.println("WARNING: Voronoi of this node is Incomplete.");
+                        if (!mNoWarning) System.err.println("WARNING: Voronoi of this node is Incomplete, voronoi parameters may be wrong.");
                         break;
                     }
                     // 如果为初始四面体同样结束环绕
                     if (tTet3 == tTet0) break;
                     // 成功获取到下一个四面体，更新数据；
                     // 如果 BC 距离过小需要进行截断
-                    if (tB.distance(tC) > LEN_CUTOFF*tDis) ++rTetNum;
+                    if (mLengthThreshold==0.0 || tB.distance(tC) > mLengthThreshold*tDis) ++rTetNum;
                     rArea += Geometry.area(tA, tB, tC);
                     tB = tC;
                     tTet1 = tTet2;
@@ -926,8 +944,10 @@ public final class VoronoiBuilder {
             updateStat_();
             int rCoordination = mNeighborVertex.size();
             // 在这里对面积较小的面进行截断
-            for (@NotNull VertexInfo tInfo : mNeighborVertex.values()) if (tInfo.mArea < AREA_CUTOFF*tInfo.mDis*tInfo.mDis) {
-                --rCoordination;
+            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) {
+                if (tInfo == null || (mAreaThreshold>0.0 && tInfo.mArea < mAreaThreshold*tInfo.mDis*tInfo.mDis)) {
+                    --rCoordination;
+                }
             }
             return rCoordination;
         }
@@ -935,7 +955,7 @@ public final class VoronoiBuilder {
             updateStat_();
             double rAtomicVolume = 0.0;
             // 使用棱锥体积公式进行计算
-            for (@NotNull VertexInfo tInfo : mNeighborVertex.values()) {
+            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) if (tInfo != null) {
                 rAtomicVolume += tInfo.mArea * tInfo.mDis / 6.0;
             }
             return rAtomicVolume;
@@ -950,14 +970,14 @@ public final class VoronoiBuilder {
         }
         @Override public int[] index() {
             updateStat_();
-            int[] rIndex = new int[INDEX_LEN];
-            for (@NotNull VertexInfo tInfo : mNeighborVertex.values()) {
+            int[] rIndex = new int[mIndexLength];
+            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) if (tInfo != null) {
                 // 如果面积过小直接跳过这个点的统计
-                if (tInfo.mArea < AREA_CUTOFF*tInfo.mDis*tInfo.mDis) continue;
+                if (mAreaThreshold>0.0 && tInfo.mArea < mAreaThreshold*tInfo.mDis*tInfo.mDis) continue;
                 int tIndex = tInfo.mTetNum;
-                if (tIndex > INDEX_LEN) {
+                if (tIndex > mIndexLength) {
                     if (!mNoWarning) System.err.println("WARNING: Voronoi index out of boundary: "+tIndex);
-                    tIndex = INDEX_LEN;
+                    tIndex = mIndexLength;
                 }
                 ++rIndex[tIndex-1];
             }
@@ -976,11 +996,4 @@ public final class VoronoiBuilder {
             return AbstractCollections.map(mNeighborTet, t->t);
         }
     }
-    
-
-    /** 需要截断的最小面积和长度 */
-    final static double AREA_CUTOFF = 1.0e-5;
-    final static double LEN_CUTOFF = 1.0e-4;
-    /** Voronor Index 长度 */
-    public final static int INDEX_LEN = 9;
 }

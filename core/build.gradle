@@ -33,12 +33,7 @@ tasks.register('sourceJar', Jar) {
     archiveClassifier = 'src'
     from sourceSets.main.allSource
 }
-tasks.register('devJar', Jar) {
-    archiveBaseName = 'jtool-core'
-    archiveClassifier = 'dev'
-    from sourceSets.main.output
-}
 
 build {
-    dependsOn jar, sourceJar, devJar
+    dependsOn jar, sourceJar
 }
