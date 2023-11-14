@@ -595,6 +595,8 @@ public final class VoronoiBuilder {
     private final Random mRNG;
     /** 存储所有的插入的节点，按照插入顺序保留方便使用 */
     private final List<Vertex> mAllVertex = new ArrayList<>();
+    /** 此值用于检验统计值是否有效 */
+    int mCheck;
     
     /** 是否需要输出警告 */
     boolean mNoWarning = false;
@@ -604,8 +606,18 @@ public final class VoronoiBuilder {
     /** 边长和面积的截断比例，用于处理退化情况 */
     double mAreaThreshold = 0.0;
     double mLengthThreshold = 0.0;
-    public VoronoiBuilder setAreaThreshold(double aAreaThreshold) {mAreaThreshold = Math.max(0.0, aAreaThreshold); return this;}
-    public VoronoiBuilder setLengthThreshold(double aLengthThreshold) {mLengthThreshold = Math.max(0.0, aLengthThreshold); return this;}
+    public VoronoiBuilder setAreaThreshold(double aAreaThreshold) {
+        double oAreaThreshold = mAreaThreshold;
+        mAreaThreshold = Math.max(0.0, aAreaThreshold);
+        if (oAreaThreshold != mAreaThreshold) mCheck = mRNG.nextInt();
+        return this;
+    }
+    public VoronoiBuilder setLengthThreshold(double aLengthThreshold) {
+        double oLengthThreshold = mLengthThreshold;
+        mLengthThreshold = Math.max(0.0, aLengthThreshold);
+        if (oLengthThreshold != mLengthThreshold) mCheck = mRNG.nextInt();
+        return this;
+    }
     
     /** Voronor Index 长度 */
     int mIndexLength = 9;
@@ -616,6 +628,7 @@ public final class VoronoiBuilder {
     public VoronoiBuilder() {this(new Random());}
     public VoronoiBuilder(Random aRNG) {
         mRNG = aRNG;
+        mCheck = mRNG.nextInt();
         // 初始的极大四面体，保证所有点都会在其内部；这样降低对称性，让 2D 情况更好处理
         Tetrahedron tInitTetrahedron = new Tetrahedron(
               new Vertex(-SCALE*1.1, SCALE*1.6,-SCALE*2.3)
@@ -640,6 +653,7 @@ public final class VoronoiBuilder {
     
     /** 此 builder 的构造方法，插入一个 xyz 点，按照几何的顺序来进行插入可以更快的找到对应的四面体 */
     public VoronoiBuilder insert(XYZ aXYZ) {
+        mCheck = mRNG.nextInt();
         // 先使用这个寻路算法找到包围输入位置的四面体
         mLast = locate_(aXYZ, mLast);
         // 指定此 XYZ 对应的 adj，并且创建节点
@@ -752,14 +766,13 @@ public final class VoronoiBuilder {
         }
         
         /** 此值用于验证是否需要更新统计信息 */
-        private int mSizeVertex = -1;
+        private int oCheck = -1;
         /** 近邻信息 */
         final List<Vertex> mNeighborVertex = new ArrayList<>(4);
         final List<Tetrahedron> mNeighborTet = new ArrayList<>(4); // 这里会保留边界四面体保证近邻都会获取到
         private void updateStat_() {
-            int tSizeVertex = sizeVertex();
-            if (mSizeVertex == tSizeVertex) return;
-            mSizeVertex = tSizeVertex;
+            if (oCheck == mCheck) return;
+            oCheck = mCheck;
             // 清空旧的数据
             mNeighborVertex.clear();
             mNeighborTet.clear();
@@ -815,14 +828,13 @@ public final class VoronoiBuilder {
         Vertex(double aX, double aY, double aZ) {super(new XYZ(aX, aY, aZ), null);}
         
         /** 此值用于验证是否需要更新统计信息 */
-        private int mSizeVertex = -1;
+        private int oCheck = -1;
         /** 近邻信息 */
         final Map<Vertex, @Nullable VertexInfo> mNeighborVertex = new LinkedHashMap<>(); // <节点，对应 voronoi 面的信息>
         final Set<Tetrahedron> mNeighborTet = new LinkedHashSet<>(); // 这里会保留边界四面体保证近邻都会获取到
         private void updateStat_() {
-            int tSizeVertex = sizeVertex();
-            if (mSizeVertex == tSizeVertex) return;
-            mSizeVertex = tSizeVertex;
+            if (oCheck == mCheck) return;
+            oCheck = mCheck;
             // 清空旧的数据
             mNeighborVertex.clear();
             mNeighborTet.clear();
