@@ -25,10 +25,9 @@ import jtoolex.algorithm.Geometry;
 /**
  * @author CHanzy
  * <p> Extended mathematical methods </p>
- * <p> The method of using internal Thread Pool is not thread safe when {@code nThreads > 1} </p>
  */
 public class MathEX {
-    /** 使用外套一层的写法可以在外部使用是替换底层的几何算法，使用优化的版本 */
+    /** 使用外套一层的写法可以在外部使用时替换底层的几何算法，使用优化的版本 */
     public static class Graph {
         /**
          * 为了可读性以及减少重复代码，这里使用会创建临时变量 {@link XYZ} 的
