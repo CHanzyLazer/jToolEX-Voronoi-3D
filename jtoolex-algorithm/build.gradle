@@ -23,15 +23,14 @@ compileJava {
 dependencies {
     compileOnly('org.jetbrains:annotations:24.0.1')                 // debug
     compileOnly project(':jtool-core')                              // core, compileOnly for dev
-    compileOnly project(':jtool-math')                              // math, compileOnly for dev
 }
 
 jar {
-    archiveBaseName = 'jtoolex-voronoi'
+    archiveBaseName = 'jtoolex-algorithm'
 }
 
 tasks.register('sourceJar', Jar) {
-    archiveBaseName = 'jtoolex-voronoi'
+    archiveBaseName = 'jtoolex-algorithm'
     archiveClassifier = 'src'
     from sourceSets.main.allSource
 }

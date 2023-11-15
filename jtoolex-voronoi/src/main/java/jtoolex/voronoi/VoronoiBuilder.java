@@ -25,6 +25,7 @@ package jtoolex.voronoi;
 import jtool.atom.XYZ;
 import jtool.atom.IXYZ;
 import jtool.code.collection.AbstractCollections;
+import jtool.math.MathEX;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -566,7 +567,7 @@ public final class VoronoiBuilder {
      * Computing the 3D Voronoi Diagram Robustly: An Easy Explanation </a>
      */
     static int orient(IXYZ aXYZ, IXYZ aA, IXYZ aB, IXYZ aC) {
-        double result = Geometry.leftOfPlane(aA, aB, aC, aXYZ);
+        double result = MathEX.Graph.leftOfPlane(aA, aB, aC, aXYZ);
         if (result > 0.0) return 1;
         else if (result < 0.0) return -1;
         return 0;
@@ -578,7 +579,7 @@ public final class VoronoiBuilder {
      * Computing the 3D Voronoi Diagram Robustly: An Easy Explanation </a>
      */
     static int inSphere(IXYZ aXYZ, IXYZ aA, IXYZ aB, IXYZ aC, IXYZ aD) {
-        double result = Geometry.inSphere(aA, aB, aC, aD, aXYZ);
+        double result = MathEX.Graph.inSphere(aA, aB, aC, aD, aXYZ);
         if (result > 0.0) return 1;
         else if (result < 0.0) return -1;
         return 0;
@@ -651,8 +652,15 @@ public final class VoronoiBuilder {
     
     
     
-    /** 此 builder 的构造方法，插入一个 xyz 点，按照几何的顺序来进行插入可以更快的找到对应的四面体 */
-    public VoronoiBuilder insert(XYZ aXYZ) {
+    /**
+     * 此 builder 的构造方法，插入一个 xyz 点，
+     * 按照几何的顺序来进行插入可以更快的找到对应的四面体；
+     * 为了避免位置被外部意外修改，需要统一进行一次值拷贝
+     */
+    public VoronoiBuilder insert(IXYZ aXYZ) {return insert_(new XYZ(aXYZ));}
+    public VoronoiBuilder insert(double aX, double aY, double aZ) {return insert_(new XYZ(aX, aY, aZ));}
+    
+    private VoronoiBuilder insert_(XYZ aXYZ) {
         mCheck = mRNG.nextInt();
         // 先使用这个寻路算法找到包围输入位置的四面体
         mLast = locate_(aXYZ, mLast);
@@ -671,8 +679,6 @@ public final class VoronoiBuilder {
         // 返回自身方便链式调用
         return this;
     }
-    public VoronoiBuilder insert(IXYZ aXYZ) {return insert(XYZ.toXYZ(aXYZ));}
-    public VoronoiBuilder insert(double aX, double aY, double aZ) {return insert(new XYZ(aX, aY, aZ));}
     
     /** 从起始四面体开始，定位到能够包含 aXYZ 的四面体 */
     private Tetrahedron locate_(XYZ aXYZ, Tetrahedron aStart) {
@@ -792,7 +798,7 @@ public final class VoronoiBuilder {
         XYZ centerSphere_() {
             if (mCenterSphere == null) {
                 if (!mNoWarning && isUniverse(this)) System.err.println("WARNING: This Tetrahedron is Universe, centerSphere may be wrong.");
-                mCenterSphere = Geometry.centerSphere(mA.mXYZ, mB.mXYZ, mC.mXYZ, mD.mXYZ);
+                mCenterSphere = MathEX.Graph.centerSphere(mA.mXYZ, mB.mXYZ, mC.mXYZ, mD.mXYZ);
             }
             return mCenterSphere;
         }
@@ -942,7 +948,7 @@ public final class VoronoiBuilder {
                     // 成功获取到下一个四面体，更新数据；
                     // 如果 BC 距离过小需要进行截断
                     if (mLengthThreshold==0.0 || tB.distance(tC) > mLengthThreshold*tDis) ++rTetNum;
-                    rArea += Geometry.area(tA, tB, tC);
+                    rArea += MathEX.Graph.area(tA, tB, tC);
                     tB = tC;
                     tTet1 = tTet2;
                     tTet2 = tTet3;

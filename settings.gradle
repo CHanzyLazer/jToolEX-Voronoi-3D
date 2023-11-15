@@ -1,1 +1,1 @@
-include 'jtool-core', 'jtoolex-voronoi'
+include 'jtool-core', 'jtool-math', 'jtoolex-voronoi', 'jtoolex-algorithm'
