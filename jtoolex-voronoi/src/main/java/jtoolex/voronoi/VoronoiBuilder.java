@@ -605,10 +605,10 @@ public final class VoronoiBuilder {
     public VoronoiBuilder setNoWarning() {return setNoWarning(true);}
     
     /** 边长和面积的截断比例，用于处理退化情况 */
-    double mAreaThreshold = 0.0;
-    double mLengthThreshold = 0.0;
-    double mAreaThresholdAbs = Double.NaN; // 默认用相对值
-    double mLengthThresholdAbs = Double.NaN; // 默认用相对值
+    private double mAreaThreshold = 0.0;
+    private double mLengthThreshold = 0.0;
+    private double mAreaThresholdAbs = Double.NaN; // 默认用相对值
+    private double mLengthThresholdAbs = Double.NaN; // 默认用相对值
     public VoronoiBuilder setAreaThreshold(double aAreaThreshold) {
         double oAreaThreshold = mAreaThreshold;
         mAreaThreshold = Math.max(0.0, aAreaThreshold);
@@ -656,6 +656,10 @@ public final class VoronoiBuilder {
         } else {
             throw new RuntimeException();
         }
+    }
+    boolean areaCutoff() {
+        // NaN 值同样返回 false
+        return (mAreaThreshold > 0.0) || (mAreaThresholdAbs > 0.0);
     }
     
     /** Voronor Index 长度 */
@@ -861,9 +865,9 @@ public final class VoronoiBuilder {
     
     /** 暂存节点信息类 */
     static class VertexInfo {
-        public final int mTetNum;
-        public final double mArea, mDis;
-        public VertexInfo(int aTetNum, double aArea, double aDis) {mTetNum = aTetNum; mArea = aArea; mDis = aDis;}
+        int mTetNum;
+        final double mArea, mDis;
+        VertexInfo(int aTetNum, double aArea, double aDis) {mTetNum = aTetNum; mArea = aArea; mDis = aDis;}
     }
     
     /** 带有统计信息的完整节点，会自动更新统计信息 */
@@ -876,14 +880,14 @@ public final class VoronoiBuilder {
         /** 近邻信息 */
         final Map<Vertex, @Nullable VertexInfo> mNeighborVertex = new LinkedHashMap<>(); // <节点，对应 voronoi 面的信息>
         final Set<Tetrahedron> mNeighborTet = new LinkedHashSet<>(); // 这里会保留边界四面体保证近邻都会获取到
-        private double mSurfaceArea = Double.NaN;
+        
         private void updateStat_() {
             if (oCheck == mCheck) return;
             oCheck = mCheck;
             // 清空旧的数据
             mNeighborVertex.clear();
             mNeighborTet.clear();
-            mSurfaceArea = 0.0;
+            double tSurfaceArea = 0.0;
             // 缓存需要处理的四面体
             Deque<Tetrahedron> tStack = new ArrayDeque<>();
             tStack.addLast(mAdj);
@@ -993,17 +997,24 @@ public final class VoronoiBuilder {
                     tTet1 = tTet2;
                     tTet2 = tTet3;
                 }
-                // 统计完成，设置此节点的信息，这里不进行截断保证体积计算准确性
-                mSurfaceArea += rArea;
+                // 统计完成，设置此节点的信息并累加总面积
+                tSurfaceArea += rArea;
                 tVertexEntry.setValue(new VertexInfo(rTetNum, rArea, tDis));
+            }
+            // 然后再遍历一次截断过小的面积
+            if (areaCutoff()) for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) if (tInfo != null) {
+                // 直接将 mTetNum 设为 0 标记为界面被截断，保留 mArea 的值保证体积计算正确
+                if (!areaValid(tInfo.mArea, tSurfaceArea)) {
+                    tInfo.mTetNum = 0;
+                }
             }
         }
         /** voronoi 统计信息，现在只有需要时才会进行统计 */
         @Override public int coordination() {
             updateStat_();
             int rCoordination = 0;
-            // 在这里对面积较小的面进行截断，改为表面积的占比
-            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) if (tInfo!=null && areaValid(tInfo.mArea, mSurfaceArea)) {
+            // 在这里对面积较小的面进行截断，现在可以直接检测 mTetNum
+            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) if (tInfo!=null && tInfo.mTetNum>=3) {
                 ++rCoordination;
             }
             return rCoordination;
@@ -1029,7 +1040,7 @@ public final class VoronoiBuilder {
             updateStat_();
             int[] rIndex = new int[mIndexLength];
             // 如果面积过小直接跳过这个点的统计，这里不考虑表面积截断带来的边长截断效应
-            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) if (tInfo!=null && areaValid(tInfo.mArea, mSurfaceArea)) {
+            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) if (tInfo!=null && tInfo.mTetNum>=3) {
                 int tIndex = tInfo.mTetNum;
                 if (tIndex > mIndexLength) {
                     if (!mNoWarning) System.err.println("WARNING: Voronoi index out of boundary: "+tIndex);
