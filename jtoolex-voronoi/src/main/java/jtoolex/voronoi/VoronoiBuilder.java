@@ -607,17 +607,55 @@ public final class VoronoiBuilder {
     /** 边长和面积的截断比例，用于处理退化情况 */
     double mAreaThreshold = 0.0;
     double mLengthThreshold = 0.0;
+    double mAreaThresholdAbs = Double.NaN; // 默认用相对值
+    double mLengthThresholdAbs = Double.NaN; // 默认用相对值
     public VoronoiBuilder setAreaThreshold(double aAreaThreshold) {
         double oAreaThreshold = mAreaThreshold;
         mAreaThreshold = Math.max(0.0, aAreaThreshold);
+        mAreaThresholdAbs = Double.NaN;
         if (oAreaThreshold != mAreaThreshold) mCheck = mRNG.nextInt();
         return this;
     }
     public VoronoiBuilder setLengthThreshold(double aLengthThreshold) {
         double oLengthThreshold = mLengthThreshold;
         mLengthThreshold = Math.max(0.0, aLengthThreshold);
+        mLengthThresholdAbs = Double.NaN;
         if (oLengthThreshold != mLengthThreshold) mCheck = mRNG.nextInt();
         return this;
+    }
+    public VoronoiBuilder setAreaThresholdAbs(double aAreaThresholdAbs) {
+        double oAreaThresholdAbs = mAreaThresholdAbs;
+        mAreaThresholdAbs = Math.max(0.0, aAreaThresholdAbs);
+        mAreaThreshold = Double.NaN;
+        if (oAreaThresholdAbs != mAreaThresholdAbs) mCheck = mRNG.nextInt();
+        return this;
+    }
+    public VoronoiBuilder setLengthThresholdAbs(double aLengthThresholdAbs) {
+        double oLengthThresholdAbs = mLengthThresholdAbs;
+        mLengthThresholdAbs = Math.max(0.0, aLengthThresholdAbs);
+        mLengthThreshold = Double.NaN;
+        if (oLengthThresholdAbs != mLengthThresholdAbs) mCheck = mRNG.nextInt();
+        return this;
+    }
+    boolean areaValid(double aArea, double aRefArea) {
+        if (!Double.isNaN(mAreaThreshold)) {
+            return mAreaThreshold==0.0 || aArea>mAreaThreshold*aRefArea;
+        } else
+        if (!Double.isNaN(mAreaThresholdAbs)) {
+            return mAreaThresholdAbs==0.0 || aArea>mAreaThresholdAbs;
+        } else {
+            throw new RuntimeException();
+        }
+    }
+    boolean lengthValid(double aLength, double aRefLength) {
+        if (!Double.isNaN(mLengthThreshold)) {
+            return mLengthThreshold==0.0 || aLength>mLengthThreshold*aRefLength;
+        } else
+        if (!Double.isNaN(mLengthThresholdAbs)) {
+            return mLengthThresholdAbs==0.0 || aLength>mLengthThresholdAbs;
+        } else {
+            throw new RuntimeException();
+        }
     }
     
     /** Voronor Index 长度 */
@@ -838,12 +876,14 @@ public final class VoronoiBuilder {
         /** 近邻信息 */
         final Map<Vertex, @Nullable VertexInfo> mNeighborVertex = new LinkedHashMap<>(); // <节点，对应 voronoi 面的信息>
         final Set<Tetrahedron> mNeighborTet = new LinkedHashSet<>(); // 这里会保留边界四面体保证近邻都会获取到
+        private double mSurfaceArea = Double.NaN;
         private void updateStat_() {
             if (oCheck == mCheck) return;
             oCheck = mCheck;
             // 清空旧的数据
             mNeighborVertex.clear();
             mNeighborTet.clear();
+            mSurfaceArea = 0.0;
             // 缓存需要处理的四面体
             Deque<Tetrahedron> tStack = new ArrayDeque<>();
             tStack.addLast(mAdj);
@@ -932,7 +972,7 @@ public final class VoronoiBuilder {
                     continue;
                 }
                 // 如果 AB 距离过小需要进行截断
-                if (mLengthThreshold==0.0 || tA.distance(tB) > mLengthThreshold*tDis) ++rTetNum;
+                if (lengthValid(tA.distance(tB), tDis)) ++rTetNum;
                 Tetrahedron tTet1 = tTet0;
                 while (true) {
                     // 绕棱获取下一个四面体
@@ -947,25 +987,24 @@ public final class VoronoiBuilder {
                     if (tTet3 == tTet0) break;
                     // 成功获取到下一个四面体，更新数据；
                     // 如果 BC 距离过小需要进行截断
-                    if (mLengthThreshold==0.0 || tB.distance(tC) > mLengthThreshold*tDis) ++rTetNum;
+                    if (lengthValid(tB.distance(tC), tDis)) ++rTetNum;
                     rArea += MathEX.Graph.area(tA, tB, tC);
                     tB = tC;
                     tTet1 = tTet2;
                     tTet2 = tTet3;
                 }
                 // 统计完成，设置此节点的信息，这里不进行截断保证体积计算准确性
+                mSurfaceArea += rArea;
                 tVertexEntry.setValue(new VertexInfo(rTetNum, rArea, tDis));
             }
         }
         /** voronoi 统计信息，现在只有需要时才会进行统计 */
         @Override public int coordination() {
             updateStat_();
-            int rCoordination = mNeighborVertex.size();
-            // 在这里对面积较小的面进行截断
-            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) {
-                if (tInfo == null || (mAreaThreshold>0.0 && tInfo.mArea < mAreaThreshold*tInfo.mDis*tInfo.mDis)) {
-                    --rCoordination;
-                }
+            int rCoordination = 0;
+            // 在这里对面积较小的面进行截断，改为表面积的占比
+            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) if (tInfo!=null && areaValid(tInfo.mArea, mSurfaceArea)) {
+                ++rCoordination;
             }
             return rCoordination;
         }
@@ -989,9 +1028,8 @@ public final class VoronoiBuilder {
         @Override public int[] index() {
             updateStat_();
             int[] rIndex = new int[mIndexLength];
-            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) if (tInfo != null) {
-                // 如果面积过小直接跳过这个点的统计
-                if (mAreaThreshold>0.0 && tInfo.mArea < mAreaThreshold*tInfo.mDis*tInfo.mDis) continue;
+            // 如果面积过小直接跳过这个点的统计，这里不考虑表面积截断带来的边长截断效应
+            for (@Nullable VertexInfo tInfo : mNeighborVertex.values()) if (tInfo!=null && areaValid(tInfo.mArea, mSurfaceArea)) {
                 int tIndex = tInfo.mTetNum;
                 if (tIndex > mIndexLength) {
                     if (!mNoWarning) System.err.println("WARNING: Voronoi index out of boundary: "+tIndex);
