@@ -8,6 +8,7 @@ package jtoolex.algorithm;
 
 
 import jtool.atom.XYZ;
+import jtool.code.collection.DoublePair;
 
 /**
  * Robust geometric predicates.
@@ -252,9 +253,6 @@ public class Geometry {
     }
     
     
-    private static class Two {
-        double x, y;
-    }
     private static final double EPSILON;
     private static final double INCERRBOUND;
     private static final double INSERRBOUND;
@@ -345,43 +343,43 @@ public class Geometry {
     private static double inSphereExact(double xa, double ya, double za, double xb, double yb, double zb, double xc,
                                         double yc, double zc, double xd, double yd, double zd, double xe, double ye,
                                         double ze) {
-        Two t = new Two();
+        DoublePair t = new DoublePair(0.0, 0.0);
         twoDiff(xa, xe, t);
-        double aex = t.x;
-        double aextail = t.y;
+        double aex = t.mFirst;
+        double aextail = t.mSecond;
         twoDiff(ya, ye, t);
-        double aey = t.x;
-        double aeytail = t.y;
+        double aey = t.mFirst;
+        double aeytail = t.mSecond;
         twoDiff(za, ze, t);
-        double aez = t.x;
-        double aeztail = t.y;
+        double aez = t.mFirst;
+        double aeztail = t.mSecond;
         twoDiff(xb, xe, t);
-        double bex = t.x;
-        double bextail = t.y;
+        double bex = t.mFirst;
+        double bextail = t.mSecond;
         twoDiff(yb, ye, t);
-        double bey = t.x;
-        double beytail = t.y;
+        double bey = t.mFirst;
+        double beytail = t.mSecond;
         twoDiff(zb, ze, t);
-        double bez = t.x;
-        double beztail = t.y;
+        double bez = t.mFirst;
+        double beztail = t.mSecond;
         twoDiff(xc, xe, t);
-        double cex = t.x;
-        double cextail = t.y;
+        double cex = t.mFirst;
+        double cextail = t.mSecond;
         twoDiff(yc, ye, t);
-        double cey = t.x;
-        double ceytail = t.y;
+        double cey = t.mFirst;
+        double ceytail = t.mSecond;
         twoDiff(zc, ze, t);
-        double cez = t.x;
-        double ceztail = t.y;
+        double cez = t.mFirst;
+        double ceztail = t.mSecond;
         twoDiff(xd, xe, t);
-        double dex = t.x;
-        double dextail = t.y;
+        double dex = t.mFirst;
+        double dextail = t.mSecond;
         twoDiff(yd, ye, t);
-        double dey = t.x;
-        double deytail = t.y;
+        double dey = t.mFirst;
+        double deytail = t.mSecond;
         twoDiff(zd, ze, t);
-        double dez = t.x;
-        double deztail = t.y;
+        double dez = t.mFirst;
+        double deztail = t.mSecond;
         
         final double[]
               t8a     = ARRAY_A_8    .get()
@@ -664,34 +662,34 @@ public class Geometry {
     @SuppressWarnings("UnnecessaryLocalVariable")
     private static double leftOfPlaneExact(double xa, double ya, double za, double xb, double yb, double zb, double xc,
                                            double yc, double zc, double xd, double yd, double zd) {
-        Two t = new Two();
+        DoublePair t = new DoublePair(0.0, 0.0);
         twoDiff(xa, xd, t);
-        double adx = t.x;
-        double adxtail = t.y;
+        double adx = t.mFirst;
+        double adxtail = t.mSecond;
         twoDiff(ya, yd, t);
-        double ady = t.x;
-        double adytail = t.y;
+        double ady = t.mFirst;
+        double adytail = t.mSecond;
         twoDiff(za, zd, t);
-        double adz = t.x;
-        double adztail = t.y;
+        double adz = t.mFirst;
+        double adztail = t.mSecond;
         twoDiff(xb, xd, t);
-        double bdx = t.x;
-        double bdxtail = t.y;
+        double bdx = t.mFirst;
+        double bdxtail = t.mSecond;
         twoDiff(yb, yd, t);
-        double bdy = t.x;
-        double bdytail = t.y;
+        double bdy = t.mFirst;
+        double bdytail = t.mSecond;
         twoDiff(zb, zd, t);
-        double bdz = t.x;
-        double bdztail = t.y;
+        double bdz = t.mFirst;
+        double bdztail = t.mSecond;
         twoDiff(xc, xd, t);
-        double cdx = t.x;
-        double cdxtail = t.y;
+        double cdx = t.mFirst;
+        double cdxtail = t.mSecond;
         twoDiff(yc, yd, t);
-        double cdy = t.x;
-        double cdytail = t.y;
+        double cdy = t.mFirst;
+        double cdytail = t.mSecond;
         twoDiff(zc, zd, t);
-        double cdz = t.x;
-        double cdztail = t.y;
+        double cdz = t.mFirst;
+        double cdztail = t.mSecond;
         
         final double[]
               t8a     = ARRAY_A_8    .get()
@@ -755,13 +753,13 @@ public class Geometry {
     }
     
     private static int scaleExpansionZeroElim(int elen, double[] e, double b, double[] h) {
-        Two t = new Two();
+        DoublePair t = new DoublePair(0.0, 0.0);
         split(b, t);
-        double bhi = t.x;
-        double blo = t.y;
+        double bhi = t.mFirst;
+        double blo = t.mSecond;
         twoProduct1Presplit(e[0], b, bhi, blo, t);
-        double q = t.x;
-        double hh = t.y;
+        double q = t.mFirst;
+        double hh = t.mSecond;
         int hindex = 0;
         if (hh != 0) {
             h[hindex++] = hh;
@@ -769,17 +767,17 @@ public class Geometry {
         for (int eindex = 1; eindex < elen; ++eindex) {
             double enow = e[eindex];
             twoProduct1Presplit(enow, b, bhi, blo, t);
-            double product1 = t.x;
-            double product0 = t.y;
+            double product1 = t.mFirst;
+            double product0 = t.mSecond;
             twoSum(q, product0, t);
-            double sum = t.x;
-            hh = t.y;
+            double sum = t.mFirst;
+            hh = t.mSecond;
             if (hh != 0) {
                 h[hindex++] = hh;
             }
             twoSumFast(product1, sum, t);
-            q = t.x;
-            hh = t.y;
+            q = t.mFirst;
+            hh = t.mSecond;
             if (hh != 0) {
                 h[hindex++] = hh;
             }
@@ -792,7 +790,7 @@ public class Geometry {
     
     private static int expansionSumZeroElimFast(int elen, double[] e, int flen, double[] f, double[] h) {
         double q, qnew, hh;
-        Two t = new Two();
+        DoublePair t = new DoublePair(0.0, 0.0);
         double enow = e[0];
         double fnow = f[0];
         int eindex = 0;
@@ -814,16 +812,16 @@ public class Geometry {
         if (eindex < elen && findex < flen) {
             if (fnow > enow == fnow > -enow) {
                 twoSumFast(enow, q, t);
-                qnew = t.x;
-                hh = t.y;
+                qnew = t.mFirst;
+                hh = t.mSecond;
                 ++eindex;
                 if (eindex < elen) {
                     enow = e[eindex];
                 }
             } else {
                 twoSumFast(fnow, q, t);
-                qnew = t.x;
-                hh = t.y;
+                qnew = t.mFirst;
+                hh = t.mSecond;
                 ++findex;
                 if (findex < flen) {
                     fnow = f[findex];
@@ -836,16 +834,16 @@ public class Geometry {
             while (eindex < elen && findex < flen) {
                 if (fnow > enow == fnow > -enow) {
                     twoSum(q, enow, t);
-                    qnew = t.x;
-                    hh = t.y;
+                    qnew = t.mFirst;
+                    hh = t.mSecond;
                     ++eindex;
                     if (eindex < elen) {
                         enow = e[eindex];
                     }
                 } else {
                     twoSum(q, fnow, t);
-                    qnew = t.x;
-                    hh = t.y;
+                    qnew = t.mFirst;
+                    hh = t.mSecond;
                     ++findex;
                     if (findex < flen) {
                         fnow = f[findex];
@@ -859,8 +857,8 @@ public class Geometry {
         }
         while (eindex < elen) {
             twoSum(q, enow, t);
-            qnew = t.x;
-            hh = t.y;
+            qnew = t.mFirst;
+            hh = t.mSecond;
             ++eindex;
             if (eindex < elen) {
                 enow = e[eindex];
@@ -872,8 +870,8 @@ public class Geometry {
         }
         while (findex < flen) {
             twoSum(q, fnow, t);
-            qnew = t.x;
-            hh = t.y;
+            qnew = t.mFirst;
+            hh = t.mSecond;
             ++findex;
             if (findex < flen) {
                 fnow = f[findex];
@@ -891,126 +889,126 @@ public class Geometry {
     
     private static void twoTwoProduct(double a1, double a0, double b1, double b0, double[] x) {
         double u0, u1, u2, ui, uj, uk, ul, um, un;
-        Two t = new Two();
+        DoublePair t = new DoublePair(0.0, 0.0);
         split(a0, t);
-        double a0hi = t.x;
-        double a0lo = t.y;
+        double a0hi = t.mFirst;
+        double a0lo = t.mSecond;
         split(b0, t);
-        double b0hi = t.x;
-        double b0lo = t.y;
+        double b0hi = t.mFirst;
+        double b0lo = t.mSecond;
         twoProduct2Presplit(a0, a0hi, a0lo, b0, b0hi, b0lo, t);
-        ui = t.x;
-        x[0] = t.y;
+        ui = t.mFirst;
+        x[0] = t.mSecond;
         split(a1, t);
-        double a1hi = t.x;
-        double a1lo = t.y;
+        double a1hi = t.mFirst;
+        double a1lo = t.mSecond;
         twoProduct2Presplit(a1, a1hi, a1lo, b0, b0hi, b0lo, t);
-        uj = t.x;
-        u0 = t.y;
+        uj = t.mFirst;
+        u0 = t.mSecond;
         twoSum(ui, u0, t);
-        uk = t.x;
-        u1 = t.y;
+        uk = t.mFirst;
+        u1 = t.mSecond;
         twoSumFast(uj, uk, t);
-        ul = t.x;
-        u2 = t.y;
+        ul = t.mFirst;
+        u2 = t.mSecond;
         split(b1, t);
-        double b1hi = t.x;
-        double b1lo = t.y;
+        double b1hi = t.mFirst;
+        double b1lo = t.mSecond;
         twoProduct2Presplit(a0, a0hi, a0lo, b1, b1hi, b1lo, t);
-        ui = t.x;
-        u0 = t.y;
+        ui = t.mFirst;
+        u0 = t.mSecond;
         twoSum(u1, u0, t);
-        uk = t.x;
-        x[1] = t.y;
+        uk = t.mFirst;
+        x[1] = t.mSecond;
         twoSum(u2, uk, t);
-        uj = t.x;
-        u1 = t.y;
+        uj = t.mFirst;
+        u1 = t.mSecond;
         twoSum(ul, uj, t);
-        um = t.x;
-        u2 = t.y;
+        um = t.mFirst;
+        u2 = t.mSecond;
         twoProduct2Presplit(a1, a1hi, a1lo, b1, b1hi, b1lo, t);
-        uj = t.x;
-        u0 = t.y;
+        uj = t.mFirst;
+        u0 = t.mSecond;
         twoSum(ui, u0, t);
-        un = t.x;
-        u0 = t.y;
+        un = t.mFirst;
+        u0 = t.mSecond;
         twoSum(u1, u0, t);
-        ui = t.x;
-        x[2] = t.y;
+        ui = t.mFirst;
+        x[2] = t.mSecond;
         twoSum(u2, ui, t);
-        uk = t.x;
-        u1 = t.y;
+        uk = t.mFirst;
+        u1 = t.mSecond;
         twoSum(um, uk, t);
-        ul = t.x;
-        u2 = t.y;
+        ul = t.mFirst;
+        u2 = t.mSecond;
         twoSum(uj, un, t);
-        uk = t.x;
-        u0 = t.y;
+        uk = t.mFirst;
+        u0 = t.mSecond;
         twoSum(u1, u0, t);
-        uj = t.x;
-        x[3] = t.y;
+        uj = t.mFirst;
+        x[3] = t.mSecond;
         twoSum(u2, uj, t);
-        ui = t.x;
-        u1 = t.y;
+        ui = t.mFirst;
+        u1 = t.mSecond;
         twoSum(ul, ui, t);
-        um = t.x;
-        u2 = t.y;
+        um = t.mFirst;
+        u2 = t.mSecond;
         twoSum(u1, uk, t);
-        ui = t.x;
-        x[4] = t.y;
+        ui = t.mFirst;
+        x[4] = t.mSecond;
         twoSum(u2, ui, t);
-        uk = t.x;
-        x[5] = t.y;
+        uk = t.mFirst;
+        x[5] = t.mSecond;
         twoSum(um, uk, t);
-        x[7] = t.x;
-        x[6] = t.y;
+        x[7] = t.mFirst;
+        x[6] = t.mSecond;
     }
     
-    private static void split(double a, Two t) {
+    private static void split(double a, DoublePair t) {
         double c = SPLITTER * a;
         double abig = c - a;
-        t.x = c - abig;
-        t.y = a - t.x;
+        t.mFirst = c - abig;
+        t.mSecond = a - t.mFirst;
     }
-    private static void twoDiff(double a, double b, Two t) {
+    private static void twoDiff(double a, double b, DoublePair t) {
         double x = a - b;
         double bvirt = a - x;
         double avirt = x + bvirt;
         double bround = bvirt - b;
         double around = a - avirt;
-        t.x = x;
-        t.y = around + bround;
+        t.mFirst = x;
+        t.mSecond = around + bround;
     }
-    private static void twoSum(double a, double b, Two t) {
+    private static void twoSum(double a, double b, DoublePair t) {
         double x = a + b;
         double bvirt = x - a;
         double avirt = x - bvirt;
         double bround = b - bvirt;
         double around = a - avirt;
-        t.x = x;
-        t.y = around + bround;
+        t.mFirst = x;
+        t.mSecond = around + bround;
     }
-    private static void twoSumFast(double a, double b, Two t) {
+    private static void twoSumFast(double a, double b, DoublePair t) {
         double x = a + b;
         double bvirt = x - a;
-        t.x = x;
-        t.y = b - bvirt;
+        t.mFirst = x;
+        t.mSecond = b - bvirt;
     }
-    private static void twoProduct1Presplit(double a, double b, double bhi, double blo, Two t) {
+    private static void twoProduct1Presplit(double a, double b, double bhi, double blo, DoublePair t) {
         split(a, t);
-        double ahi = t.x;
-        double alo = t.y;
-        t.x = a * b;
-        double err1 = t.x - ahi * bhi;
+        double ahi = t.mFirst;
+        double alo = t.mSecond;
+        t.mFirst = a * b;
+        double err1 = t.mFirst - ahi * bhi;
         double err2 = err1 - alo * bhi;
         double err3 = err2 - ahi * blo;
-        t.y = alo * blo - err3;
+        t.mSecond = alo * blo - err3;
     }
-    private static void twoProduct2Presplit(double a, double ahi, double alo, double b, double bhi, double blo, Two t) {
-        t.x = a * b;
-        double err1 = t.x - ahi * bhi;
+    private static void twoProduct2Presplit(double a, double ahi, double alo, double b, double bhi, double blo, DoublePair t) {
+        t.mFirst = a * b;
+        double err1 = t.mFirst - ahi * bhi;
         double err2 = err1 - alo * bhi;
         double err3 = err2 - ahi * blo;
-        t.y = alo * blo - err3;
+        t.mSecond = alo * blo - err3;
     }
 }
