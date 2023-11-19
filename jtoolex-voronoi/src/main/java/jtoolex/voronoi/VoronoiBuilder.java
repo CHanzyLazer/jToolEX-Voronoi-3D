@@ -33,6 +33,8 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.*;
 
+import static jtool.code.CS.RANDOM;
+
 
 /**
  * 简化使用的 3D Voronoi 构造器，基于：
@@ -668,8 +670,9 @@ public final class VoronoiBuilder {
     
     
     /** 构造函数 */
-    public VoronoiBuilder() {this(new Random());}
-    public VoronoiBuilder(Random aRNG) {
+    public VoronoiBuilder() {this(RANDOM);}
+    public VoronoiBuilder(long aSeed) {this(new Random(aSeed));}
+    VoronoiBuilder(Random aRNG) {
         mRNG = aRNG;
         mCheck = mRNG.nextInt();
         // 初始的极大四面体，保证所有点都会在其内部；这样降低对称性，让 2D 情况更好处理
