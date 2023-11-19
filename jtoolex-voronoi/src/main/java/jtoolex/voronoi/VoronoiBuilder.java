@@ -324,9 +324,8 @@ public final class VoronoiBuilder {
             mA = aA; mB = aB; mC = aC; mD = aD;
         }
         
-        /** 使用一个专门的 boolean 来记录此四面体是否已经被删除 */
-        private boolean mDead = false;
-        public boolean valid() {return !mDead;}
+        /** 直接从 mAllTet 来检测此四面体是否已经被删除 */
+        @Override public boolean valid() {return mAllTet.contains((Tetrahedron)this);}
         /**  是否含有输入的节点 */
         boolean containsVertex(Vertex aVertex) {return mA==aVertex || mB==aVertex || mC==aVertex || mD==aVertex;}
         
@@ -499,7 +498,7 @@ public final class VoronoiBuilder {
         
         void delete() {
             mTetA = mTetB = mTetC = mTetD = null;
-            mDead = true;
+            mAllTet.remove((Tetrahedron)this);
         }
         void patch(byte aOld, Tetrahedron aNewTet, byte aNew) {
             Tetrahedron tNeighbor = getNeighbor(aOld);
@@ -595,9 +594,11 @@ public final class VoronoiBuilder {
     private Tetrahedron mLast;
     
     /** 独立的随机数生成器 */
-    private final Random mRNG;
+    final Random mRNG;
     /** 存储所有的插入的节点，按照插入顺序保留方便使用 */
-    private final List<Vertex> mAllVertex = new ArrayList<>();
+    final List<Vertex> mAllVertex = new ArrayList<>();
+    /** 存储所有的创建的四面体，这个是无序的 */
+    final Set<Tetrahedron> mAllTet = new HashSet<>();
     /** 此值用于检验统计值是否有效 */
     int mCheck;
     
@@ -790,18 +791,7 @@ public final class VoronoiBuilder {
      * @return 包含 voronoi 多面体参数的四面体
      */
     public ITetrahedron getTetrahedron() {return mLast;}
-    public @Unmodifiable Collection<ITetrahedron> allTetrahedron() {
-        Set<ITetrahedron> rAllTet = new LinkedHashSet<>();
-        Deque<ITetrahedron> tStack = new ArrayDeque<>();
-        tStack.addLast(mLast);
-        while (!tStack.isEmpty()) {
-            ITetrahedron tLast = tStack.removeLast();
-            if (rAllTet.contains(tLast)) continue;
-            for (ITetrahedron tTet : tLast.neighborTetrahedron()) tStack.addLast(tTet);
-            rAllTet.add(tLast);
-        }
-        return rAllTet;
-    }
+    public @Unmodifiable Collection<ITetrahedron> allTetrahedron() {return AbstractCollections.map(mAllTet, v->v);}
     @VisibleForTesting public ITetrahedron getTet() {return getTetrahedron();}
     @VisibleForTesting public @Unmodifiable Collection<ITetrahedron> allTet() {return allTetrahedron();}
     
@@ -814,6 +804,7 @@ public final class VoronoiBuilder {
             mB.mAdj = this;
             mC.mAdj = this;
             mD.mAdj = this;
+            mAllTet.add(this);
         }
         
         /** 此值用于验证是否需要更新统计信息 */
