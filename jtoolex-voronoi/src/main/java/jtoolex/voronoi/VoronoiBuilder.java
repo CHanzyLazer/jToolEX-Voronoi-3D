@@ -22,6 +22,7 @@
  */
 package jtoolex.voronoi;
 
+import jtool.atom.AbstractXYZ;
 import jtool.atom.XYZ;
 import jtool.atom.IXYZ;
 import jtool.code.collection.AbstractCollections;
@@ -840,7 +841,7 @@ public final class VoronoiBuilder {
         }
         public IXYZ centerSphere() {
             final XYZ tCenterSphere = centerSphere_();
-            return tCenterSphere==null ? null : new IXYZ() {
+            return tCenterSphere==null ? null : new AbstractXYZ() {
                 @Override public double x() {return tCenterSphere.mX;}
                 @Override public double y() {return tCenterSphere.mY;}
                 @Override public double z() {return tCenterSphere.mZ;}
